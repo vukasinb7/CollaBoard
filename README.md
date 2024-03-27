@@ -1,4 +1,6 @@
 # CollaBoard
+## Napomena za projektni zadatak
+Projekat se radi za ocenu 10. Ovaj projekat je namenjen za diplomski rad i odobren je od strane profesora Dejanovića. Plan za ovaj projekat je implementirati podskup problema definisanog u narednim poglavljima. Plan je implementiranje funkcionalnosti 1., 2., 3., 6., 7.
 
 ## Opis problema
 Potrebno je implementirati aplikaciju koja omogućava kolaborativno pisanje/crtanje po tabli. Korisnicima je potrebno omogućiti lak pristup tabli za crtanje sa mnoštvom alata i mogućnosti, kao i lako i jednostavno deljenje i čuvanje njihovih radova. Projekat ima za cilj razvijanje visoko performantne kolaborativne table koja omogućava interakciju više korisnika na tabli u realnom vremenu. Backend sistema će biti implementiran koristeći programski jezik Rust kako bi se osigurala low latency osobina koja je kljucna za ovakav tip aplikacije, uz dodatno korišćenje WebAssembly tehnologije za optimizaciju korisničkog interfejsa.
