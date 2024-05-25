@@ -1,5 +1,5 @@
 use crate::ctx::Ctx;
-use crate::model::{ModelController, User};
+use crate::model::{User};
 use crate::{Error, utils};
 use async_trait::async_trait;
 use axum::body::Body;
@@ -27,7 +27,8 @@ pub async fn guard(mut req: Request<Body>, next: Next) -> Result<Response,Error>
         id:1,
         email:"admin".to_string(),
         surname:"admin".to_string(),
-        name:"admin".to_string()
+        name:"admin".to_string(),
+        password:"lala".to_string()
     }; //TODO: Get real data from DB
 
     req.extensions_mut().insert(user);

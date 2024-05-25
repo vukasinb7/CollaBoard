@@ -1,27 +1,39 @@
+use std::sync::{Arc, Mutex};
 use axum::response::{IntoResponse, Response};
-use axum::{Json, Router};
+use axum::{Extension, Json, Router};
 use axum::middleware;
 use axum::routing::get_service;
+use diesel::PgConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::json;
-use tower_cookies::CookieManagerLayer;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
+use crate::db::establish_connection;
 pub use self::error::{Error};
 
+#[macro_use]
+extern crate diesel;
 mod error;
-mod web;
+mod routes;
 mod model;
-
 mod utils;
 mod ctx;
 
+mod db;
+mod schema;
+mod handlers;
+
+pub type DbPool=Pool<ConnectionManager<PgConnection>>;
+
+
 #[tokio::main]
 async fn main()->Result<(),Error> {
-
+    let db_pool = establish_connection();
     let app = Router::new()
-        .merge(web::routes_user::routes())
-        .route_layer(middleware::from_fn(web::mw_auth::guard))
-        .merge(web::routes_login::routes())
+        .merge(routes::routes_user::routes())
+        .route_layer(middleware::from_fn(routes::mw_auth::guard))
+        .merge(routes::routes_login::routes())
+        .layer(Extension(db_pool))
         .layer(middleware::map_response(main_response_mapper))
         .fallback_service(routes_static());
 

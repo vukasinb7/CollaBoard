@@ -1,64 +1,95 @@
-use crate::{Error};
-use serde::{Deserialize,Serialize};
-use std::sync::{Arc,Mutex};
+use chrono::NaiveDateTime;
+use serde::Deserialize;
+use crate::schema::*;
 
-#[derive(Clone,Debug,Serialize)]
- pub struct User{
-     pub id:u64,
-     pub name:String,
-     pub surname:String,
-     pub email:String,
- }
-
-#[derive(Deserialize)]
-pub struct UserDto{
-    pub name:String,
-    pub surname:String,
-    pub email:String,
+#[derive(Insertable,Debug,Deserialize)]
+#[table_name = "users"]
+pub struct NewUser {
+    pub name: String,
+    pub surname: String,
+    pub email: String,
+    pub password: String,
 }
 
-#[derive(Clone)]
-pub struct ModelController{
-    users_store:Arc<Mutex<Vec<Option<User>>>>
+
+#[derive(Identifiable,Debug, Queryable, AsChangeset,Clone)]
+#[primary_key(id)]
+#[table_name = "users"]
+pub struct User {
+    pub id: i32,
+    pub name: String,
+    pub surname: String,
+    pub email: String,
+    pub password: String,
 }
 
-impl ModelController {
-    pub async fn new() -> Result<Self,Error>{
-        Ok(Self{ users_store:Arc::default()})
-    }
+#[derive(Insertable)]
+#[table_name = "boards"]
+pub struct NewBoard {
+    pub name: String,
+    pub path:  String,
+    pub owner_id: i32,
 }
 
-impl ModelController {
-
-    pub async fn create_user(
-        &self,
-        user_dto:UserDto
-    ) -> Result<User,Error> {
-        let mut store = self.users_store.lock().unwrap();
-
-        let id = store.len() as u64;
-        let user = User{
-            id,
-            name: user_dto.name,
-            surname: user_dto.surname,
-            email:user_dto.email
-        };
-        store.push(Some(user.clone()));
-
-        Ok(user)
-    }
-
-    pub async fn list_users(&self)->Result<Vec<User>,Error>{
-        let store= self.users_store.lock().unwrap();
-        let tickets=store.iter().filter_map(|user| user.clone()).collect();
-        Ok(tickets)
-    }
-
-    pub async fn delete_user(&self,id:u64)->Result<User,Error>{
-        let mut store= self.users_store.lock().unwrap();
-        let user=store.get_mut(id as usize).and_then(|user| user.take());
-
-        user.ok_or(Error::UserDeleteFailIdNotFound {id})
-    }
-
+#[derive(Identifiable,Debug, Queryable, AsChangeset)]
+#[primary_key(id)]
+#[diesel(belongs_to(User))]
+#[table_name = "boards"]
+pub struct Board {
+    pub id: i32,
+    pub name: String,
+    pub path: String,
+    pub owner_id: i32,
 }
+
+#[derive(Insertable)]
+#[table_name = "permissions"]
+pub struct NewPermission<'a> {
+    pub board_id: &'a i32,
+    pub user_id: &'a i32,
+    pub role: &'a i32,
+}
+
+#[derive(Identifiable,Debug, Queryable, AsChangeset)]
+#[primary_key(board_id,user_id)]
+#[diesel(belongs_to(Board,foreign_key=board_id))]
+#[diesel(belongs_to(User,foreign_key=user_id))]
+#[table_name = "permissions"]
+pub struct Permission {
+    pub board_id: i32,
+    pub user_id: i32,
+    pub role: i32,
+}
+
+#[derive(Insertable)]
+#[table_name = "invitations"]
+pub struct NewInvitation<'a> {
+    pub code: &'a str,
+    pub board_id: &'a i32,
+    pub user_id: &'a i32,
+    pub role: &'a i32,
+    pub expire: &'a NaiveDateTime,
+}
+
+#[derive(Identifiable,Debug, Queryable, AsChangeset)]
+#[primary_key(id)]
+#[diesel(belongs_to(Board,foreign_key=board_id))]
+#[diesel(belongs_to(User,foreign_key=user_id))]
+#[table_name = "invitations"]
+pub struct Invitation {
+    pub id: i32,
+    pub code: String,
+    pub board_id:i32,
+    pub user_id:i32,
+    pub role:i32,
+    pub expire:NaiveDateTime
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoginPayload {
+    pub email: String,
+    pub password: String,
+}
+
+
+

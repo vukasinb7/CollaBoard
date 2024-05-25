@@ -7,11 +7,10 @@ use crate::utils;
 
 
 pub fn encode_jwt(email: String) -> Result<String, StatusCode> {
-    let now = Utc::now().timestamp() as usize;
-    let expire = (now+Duration::hours(24)).timestamp() as usize;
+    let now = Utc::now();
     let claim = Ctx {
-        iat: now,
-        exp: expire,
+        iat: now.timestamp() as usize,
+        exp: (now+Duration::hours(24)).timestamp() as usize,
         email,
     };
 
@@ -23,6 +22,6 @@ pub fn encode_jwt(email: String) -> Result<String, StatusCode> {
 pub fn decode_jwt(jwt: String) -> Result<TokenData<Ctx>, StatusCode> {
     let secret = (*utils::constants::TOKEN).clone();
     let res:Result<TokenData<Ctx>,StatusCode> = decode(&jwt, &DecodingKey::from_secret(secret.as_ref()), &Validation::default())
-        .map_err(|err| { StatusCode::INTERNAL_SERVER_ERROR });
+        .map_err(|_| { StatusCode::INTERNAL_SERVER_ERROR });
     return res;
 }
