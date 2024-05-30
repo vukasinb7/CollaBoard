@@ -18,7 +18,8 @@ uuid = { version = "1.8.0", features = ["v4"] }
 jsonwebtoken = "9"
 lazy_static = "1.4.0"
 dotenv = "0.15.0"
-chrono = "0.4.38"
+chrono = { version = "0.4.38", features = ["serde"] }
 anyhow = "1.0.86"
 diesel = { version = "2.1.6", features = ["postgres", "chrono", "r2d2"] }
 sha3 = "0.10.8"
+rand = "0.8.5"
