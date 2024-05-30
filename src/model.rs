@@ -1,13 +1,18 @@
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use crate::schema::*;
+use validator::{Validate};
 
-#[derive(Insertable,Debug,Deserialize)]
+#[derive(Insertable,Debug,Validate,Deserialize)]
 #[diesel(table_name = users)]
 pub struct NewUser {
+    #[validate(length(min=1))]
     pub name: String,
+    #[validate(length(min=1))]
     pub surname: String,
+    #[validate(email)]
     pub email: String,
+    #[validate(length(min=1))] //TODO:Password complexity check
     pub password: String,
 }
 

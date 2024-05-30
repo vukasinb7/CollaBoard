@@ -9,8 +9,11 @@ use crate::ctx::Ctx;
 use crate::dto::{DeletePermissionParams, InvitationPayload};
 use crate::model::{Board, Invitation, NewInvitation, NewPermission, User};
 use crate::schema::{boards, invitations, permissions, users};
+use validator::{Validate};
 
 pub async fn create_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Json(payload): Json<InvitationPayload>) -> Result<Json<Invitation>, Error> {
+    payload.validate().map_err(|_|Error::BadRequest)?;
+
     let mut connection = pool.get().map_err(|_|Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(&ctx.email))
         .first::<User>(&mut connection)
@@ -75,6 +78,8 @@ pub async fn accept_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Pat
 
 pub async fn change_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Json(payload): Json<InvitationPayload>) -> Result<Json<Value>, Error> {
     use diesel::prelude::*;
+    payload.validate().map_err(|_|Error::BadRequest)?;
+
     let mut connection = pool.get().map_err(|_|Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(ctx.email.clone()))
         .first::<User>(&mut connection).map_err(|_|Error::UserNotFound)?;
@@ -101,6 +106,8 @@ pub async fn change_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Jso
 
 pub async fn delete_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Query(payload): Query<DeletePermissionParams>) -> Result<Json<Value>, Error> {
     use diesel::prelude::*;
+    payload.validate().map_err(|_|Error::BadRequest)?;
+
     let mut connection = pool.get().map_err(|_|Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(&ctx.email))
         .first::<User>(&mut connection)

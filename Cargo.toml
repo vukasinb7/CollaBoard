@@ -23,3 +23,4 @@ anyhow = "1.0.86"
 diesel = { version = "2.1.6", features = ["postgres", "chrono", "r2d2"] }
 sha3 = "0.10.8"
 rand = "0.8.5"
+validator = { version = "0.18", features = ["derive"] }

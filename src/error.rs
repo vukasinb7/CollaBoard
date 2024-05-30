@@ -6,6 +6,8 @@ use serde::Serialize;
 #[derive(Clone, Debug, Serialize, strum_macros::AsRefStr)]
 #[serde(tag = "type", content = "data")]
 pub enum Error {
+    // -- Validation error
+    BadRequest,
 
     // -- DB errors.
     FailToGetPool,
@@ -54,6 +56,7 @@ impl Error {
             Self::AuthFailCtxNotInRequestExt =>(StatusCode::UNAUTHORIZED, ClientError::NO_AUTH),
 
             Self::PermissionDenied=>(StatusCode::FORBIDDEN,ClientError::NO_AUTH),
+            Self::BadRequest=>(StatusCode::BAD_REQUEST,ClientError::INVALID_PARAMS),
 
             _ => (
                 StatusCode::INTERNAL_SERVER_ERROR,

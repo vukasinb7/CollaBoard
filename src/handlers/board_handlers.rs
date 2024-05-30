@@ -10,8 +10,12 @@ use crate::dto::{BoardPayload};
 use crate::model::{Board, NewBoard, Permission, User};
 use crate::schema::{boards, permissions, users};
 
+use validator::{Validate};
+
 pub async fn create_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Json(payload): Json<BoardPayload>) -> Result<Json<Board>, Error> {
     use diesel::prelude::*;
+    payload.validate().map_err(|_|Error::BadRequest)?;
+
     let mut connection = pool.get().map_err(|_| Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(ctx.email.clone()))
         .first::<User>(&mut connection)

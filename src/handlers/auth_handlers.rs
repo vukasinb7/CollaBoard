@@ -8,8 +8,11 @@ use crate::dto::{LoginPayload, UserResponse};
 use crate::model::{NewUser, User};
 use crate::schema::users;
 use crate::utils::jwt::encode_jwt;
+use validator::{Validate};
 
 pub async fn login(Extension(pool): Extension<DbPool>, payload: Json<LoginPayload>) -> Result<Json<Value>, Error> {
+    payload.validate().map_err(|_|Error::BadRequest)?;
+
     let mut connection = pool.get().map_err(|_|Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(payload.email.clone())).first::<User>(&mut connection).map_err(|_| Error::UserNotFound)?;
 
@@ -27,6 +30,8 @@ pub async fn login(Extension(pool): Extension<DbPool>, payload: Json<LoginPayloa
 }
 
 pub async fn register(Extension(pool): Extension<DbPool>, Json(mut user): Json<NewUser>) -> Result<Json<Value>, Error> {
+    user.validate().map_err(|_|Error::BadRequest)?;
+
     let password_hash = sha3::Sha3_256::digest(user.password.as_bytes());
     let password_hash = format!("{:x}", password_hash);
     user.password=password_hash.clone();
