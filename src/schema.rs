@@ -27,7 +27,7 @@ diesel::table! {
     permissions (board_id, user_id) {
         board_id -> Int4,
         user_id -> Int4,
-        role -> Nullable<Int4>,
+        role -> Int4,
     }
 }
 

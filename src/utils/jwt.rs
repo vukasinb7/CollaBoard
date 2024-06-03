@@ -16,7 +16,7 @@ pub fn encode_jwt(email: String) -> Result<String, StatusCode> {
 
     let secret = (*utils::constants::TOKEN).clone();
     return encode(&Header::default(), &claim, &EncodingKey::from_secret(secret.as_ref()))
-        .map_err(|err| { StatusCode::INTERNAL_SERVER_ERROR });
+        .map_err(|_| { StatusCode::INTERNAL_SERVER_ERROR });
 }
 
 pub fn decode_jwt(jwt: String) -> Result<TokenData<Ctx>, StatusCode> {

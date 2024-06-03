@@ -1,11 +1,8 @@
-use crate::ctx::Ctx;
-use crate::model::{User};
-use crate::{Error, utils};
 use async_trait::async_trait;
 use axum::body::Body;
-use axum::extract::{FromRequestParts, State};
+use axum::extract::FromRequestParts;
+use axum::http::Request;
 use axum::http::request::Parts;
-use axum::http::{Request, StatusCode};
 use axum::middleware::Next;
 use axum::RequestPartsExt;
 use axum::response::Response;
@@ -13,7 +10,10 @@ use axum_extra::headers::{Authorization, HeaderMapExt};
 use axum_extra::headers::authorization::Bearer;
 use axum_extra::TypedHeader;
 use jsonwebtoken::{decode, DecodingKey, Validation};
-use crate::utils::jwt::{decode_jwt};
+
+use crate::{Error, utils};
+use crate::ctx::Ctx;
+use crate::utils::jwt::decode_jwt;
 
 pub async fn guard(mut req: Request<Body>, next: Next) -> Result<Response,Error> {
 
@@ -21,18 +21,9 @@ pub async fn guard(mut req: Request<Body>, next: Next) -> Result<Response,Error>
         .ok_or(Error::AuthFailTokenWrongFormat)?.token().to_owned();
 
     let claim = decode_jwt(token)
-        .map_err(|err| Error::AuthFailCtxNotInRequestExt )?.claims;
+        .map_err(|_| Error::AuthFailCtxNotInRequestExt )?.claims;
 
-    let user=User{
-        id:1,
-        email:"admin".to_string(),
-        surname:"admin".to_string(),
-        name:"admin".to_string(),
-        password:"lala".to_string()
-    }; //TODO: Get real data from DB
-
-    req.extensions_mut().insert(user);
-
+    req.extensions_mut().insert(claim);
     Ok(next.run(req).await)
 }
 #[async_trait]

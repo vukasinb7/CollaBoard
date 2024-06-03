@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::r2d2;
-use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::r2d2::{ConnectionManager};
 
 use crate::{DbPool, utils};
 

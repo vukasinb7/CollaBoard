@@ -1,6 +1,6 @@
 pub mod mw_auth;
-pub mod routes_login;
+pub mod auth_routes;
 
-pub mod routes_user;
+pub mod permission_routes;
 
-pub mod routes_board;
+pub mod board_routes;

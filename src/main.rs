@@ -1,14 +1,14 @@
-use std::sync::{Arc, Mutex};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json, Router};
 use axum::middleware;
-use axum::routing::get_service;
+use axum::routing::{get, get_service};
 use diesel::PgConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::json;
 use tower_http::services::ServeDir;
 use uuid::Uuid;
-use crate::db::establish_connection;
+use crate::utils::db::establish_connection;
+use crate::handlers::auth_handlers::who_am_i;
 pub use self::error::{Error};
 
 #[macro_use]
@@ -19,9 +19,9 @@ mod model;
 mod utils;
 mod ctx;
 
-mod db;
 mod schema;
 mod handlers;
+mod dto;
 
 pub type DbPool=Pool<ConnectionManager<PgConnection>>;
 
@@ -30,9 +30,11 @@ pub type DbPool=Pool<ConnectionManager<PgConnection>>;
 async fn main()->Result<(),Error> {
     let db_pool = establish_connection();
     let app = Router::new()
-        .merge(routes::routes_user::routes())
+        .merge(routes::permission_routes::routes())
+        .merge(routes::board_routes::routes())
+        .route("/whoami", get(who_am_i))
         .route_layer(middleware::from_fn(routes::mw_auth::guard))
-        .merge(routes::routes_login::routes())
+        .merge(routes::auth_routes::routes())
         .layer(Extension(db_pool))
         .layer(middleware::map_response(main_response_mapper))
         .fallback_service(routes_static());
