@@ -104,7 +104,7 @@ pub async fn change_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Jso
     Ok(body)
 }
 
-pub async fn delete_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Query(payload): Query<DeletePermissionParams>) -> Result<Json<Value>, Error> {
+    pub async fn delete_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Query(payload): Query<DeletePermissionParams>) -> Result<Json<Value>, Error> {
     use diesel::prelude::*;
     payload.validate().map_err(|_|Error::BadRequest)?;
 

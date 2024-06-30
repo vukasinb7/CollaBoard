@@ -10,7 +10,6 @@ use crate::routes::{Route, switch};
 
 
 
-
 #[function_component(Main)]
 fn app() -> Html {
     html! {

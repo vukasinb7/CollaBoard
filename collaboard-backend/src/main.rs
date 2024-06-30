@@ -1,16 +1,27 @@
+use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, Mutex};
 use axum::response::{IntoResponse, Response};
 use axum::{Extension, Json, Router};
+use axum::extract::{State, WebSocketUpgrade};
+use axum::extract::ws::{Message, WebSocket};
 use axum::middleware;
 use axum::routing::{get, get_service};
 use axum_extra::headers::Origin;
-use diesel::PgConnection;
+use diesel::{PgConnection, RunQueryDsl};
 use diesel::r2d2::{ConnectionManager, Pool};
+use futures::{SinkExt, StreamExt};
+use serde::de::Unexpected::Str;
+use serde::Deserialize;
 use serde_json::json;
+use tokio::sync::broadcast;
 use tower_http::cors::{Any, CorsLayer};
 use tower_http::services::ServeDir;
 use uuid::Uuid;
 use crate::utils::db::establish_connection;
 use crate::handlers::auth_handlers::who_am_i;
+use crate::handlers::ws_handlers::handler;
+use crate::model::Board;
+use crate::schema::boards;
 pub use self::error::{Error};
 
 #[macro_use]
@@ -27,17 +38,41 @@ mod dto;
 
 pub type DbPool=Pool<ConnectionManager<PgConnection>>;
 
+struct WSState {
+    rooms: Mutex<HashMap<String, RoomState>>,
+}
+struct RoomState {
+    users: Mutex<HashSet<String>>,
+    tx: broadcast::Sender<String>,
+    buff:Mutex<String>,
+}
+
+impl RoomState {
+    fn new() -> Self {
+        Self {
+            users: Mutex::new(HashSet::new()),
+            tx: broadcast::channel(69).0,
+            buff:Mutex::new(String::new())
+        }
+    }
+}
+
 
 #[tokio::main]
 async fn main()->Result<(),Error> {
     let db_pool = establish_connection();
+    let app_state = Arc::new(WSState {
+        rooms: Mutex::new(HashMap::new())
+    });
     let app = Router::new()
         .merge(routes::permission_routes::routes())
         .merge(routes::board_routes::routes())
         .route("/whoami", get(who_am_i))
         .route_layer(middleware::from_fn(routes::mw_auth::guard))
         .merge(routes::auth_routes::routes())
+        .route("/ws", get(handler))
         .layer(Extension(db_pool))
+        .layer(Extension(app_state.clone()))
         .layer(middleware::map_response(main_response_mapper))
         .fallback_service(routes_static())
         .layer(
@@ -51,6 +86,9 @@ async fn main()->Result<(),Error> {
     axum::serve(listener, app).await.unwrap();
     Ok(())
 }
+
+
+
 
 async fn main_response_mapper(res: Response) -> Response {
     println!("->> {:<12} - main_response_mapper", "RES_MAPPER");

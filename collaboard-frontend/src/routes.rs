@@ -1,5 +1,6 @@
 use yew_router::prelude::*;
 use yew::prelude::*;
+use crate::pages::board_page::BoardPage;
 use crate::pages::home_page::{HomePage};
 use crate::pages::login_page::{LoginPage};
 
@@ -19,6 +20,7 @@ pub enum Route {
 pub fn switch(route: Route) -> Html {
     match route {
         Route::Home => html! { <HomePage /> },
+        Route::Board => html! { <BoardPage /> },
         Route::Login=> html! { <LoginPage /> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
         _ => html!{<h1>{"Not Found"}</h1>}
