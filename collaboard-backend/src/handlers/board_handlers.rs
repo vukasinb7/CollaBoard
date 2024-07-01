@@ -1,3 +1,4 @@
+use std::fs;
 use std::fs::File;
 use axum::{Extension, Json};
 use axum::extract::{Path};
@@ -6,7 +7,7 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 use crate::{DbPool, Error};
 use crate::ctx::Ctx;
-use crate::dto::{BoardPayload};
+use crate::dto::{BoardPayload, BoardResponse, UpdateBoardPayload};
 use crate::model::{Board, NewBoard, Permission, User};
 use crate::schema::{boards, permissions, users};
 
@@ -37,7 +38,7 @@ pub async fn create_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Json(pay
     Ok(Json(new_board))
 }
 
-pub async fn get_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(path_board_id): Path<i32>) -> Result<Json<Board>, Error> {
+pub async fn get_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(path_board_id): Path<i32>) -> Result<Json<BoardResponse>, Error> {
     let mut connection = pool.get().map_err(|_| Error::FailToGetPool).unwrap();
     let user = users::table.filter(users::email.eq(&ctx.email))
         .first::<User>(&mut connection)
@@ -46,15 +47,29 @@ pub async fn get_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(path_b
     let board = boards::table.filter(boards::id.eq(&path_board_id))
         .first::<Board>(&mut connection)
         .map_err(|_| Error::BoardNotFound)?;
-
+    let mut permission=2;
     if board.owner_id.ne(&user.id) {
-        permissions::table
+        let perm=permissions::table
             .filter(permissions::user_id.eq(&user.id).and(permissions::board_id.eq(&board.id)))
             .first::<Permission>(&mut connection)
             .map_err(|_| Error::PermissionDenied)?;
+        permission=perm.role;
     }
 
-    Ok(Json(board))
+    let file_content = fs::read_to_string(board.path.clone()).unwrap();
+    let json_data: Value = serde_json::from_str(&file_content).expect("Unable to parse JSON");
+    let json_string = json_data.to_string();
+
+    let response= BoardResponse{
+        id:board.id.clone(),
+        name: board.name.clone(),
+        data: json_string,
+        role: match permission {1=>"Editor".to_string(),2=>"Owner".to_string(),
+            _ => "Viewer".to_string()
+        },
+    };
+
+    Ok(Json(response))
 }
 
 pub async fn get_my_boards(ctx: Ctx, Extension(pool): Extension<DbPool>) -> Result<Json<Vec<Board>>, Error> {
@@ -100,4 +115,6 @@ pub async fn delete_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(pat
     let body = Json(json!({"success":true}));
     Ok(body)
 }
+
+
 

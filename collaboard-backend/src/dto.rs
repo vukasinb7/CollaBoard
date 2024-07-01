@@ -43,4 +43,23 @@ pub struct UserPermission {
     permission_type: i32,
 }
 
+#[derive(Queryable,Debug, Serialize,Deserialize)]
+pub struct BoardResponse {
+    pub id:i32,
+    pub name:String,
+    pub data:String,
+    pub role:String
+}
+
+
+#[derive(Queryable,Debug, Serialize,Deserialize)]
+pub struct UpdateBoardPayload {
+    pub elements:Vec<String>
+}
+
+#[derive(Queryable,Debug, Serialize,Deserialize)]
+pub struct BoardElement {
+    pub id:String,
+}
+
 

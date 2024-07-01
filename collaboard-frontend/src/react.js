@@ -12,9 +12,13 @@ let elements=' [{"id":"InTX9cQUE9-aAQGR7wnXe","type":"freedraw","x":473.77777099
     '217.7777557373047],[86.22222900390625,204.4444122314453],[97.77777099609375,169.7777557373047],[107.5555419921875,150.2222137451172],[118.22222900390625,129.7777557373047],[128.888' +
     '916015625,109.33332824707031],[140.4444580078125,93.33332824707031],[156.4444580078125,70.22221374511719],[162.66668701171875,60.44441223144531],[167.11114501953125,54.222198486328' +
     '125],[172.44451904296875,48.88887023925781],[178.66668701171875,38.222198486328125],[180.4444580078125,36.444427490234375],[183.11114501953125,32.88890075683594],[184,31.999984741210938],[184,31.999984741210938]],"pressures":[],"simulatePressure":true,"lastCommittedPoint":[184,31.999984741210938]}]'
-export function render_excalidraw(email) {
-    elements={elements:JSON.parse(elements),appState: { zenModeEnabled: true},
-        scrollToContent: true}
+export function render_excalidraw(email,id,data,role) {
+    elements=JSON.parse(data)
+    for (let i = 0; i <elements['elements'].length; i++) {
+        elements['elements'][i]=JSON.parse(elements['elements'][i])
+    }
+
+    console.log(elements)
     let old_elements=JSON.parse(JSON.stringify(elements['elements']));
     const exampleSocket = new WebSocket(
         "ws://localhost:3000/ws",
@@ -22,7 +26,7 @@ export function render_excalidraw(email) {
     let excalidrawapi=null;
 
     exampleSocket.onopen = () => {
-        exampleSocket.send('{"email":"'+ email +'","board_id":"1"}');
+        exampleSocket.send('{"email":"'+ email +'","board_id":"'+id+'"}');
     }
 
     exampleSocket.onmessage=(message)=>{
@@ -64,7 +68,7 @@ export function render_excalidraw(email) {
         }
         old_elements=JSON.parse(JSON.stringify(e));
 
-    }, 200);
+    }, 800);
 
     let element = React.createElement(
         React.Fragment,
@@ -74,7 +78,7 @@ export function render_excalidraw(email) {
             {
                 style: { height: "100vh" },
             },
-            React.createElement(ExcalidrawLib.Excalidraw, { viewModeEnabled: false,initialData:elements ,onChange:(e)=>{debouncedOnChange(e)},excalidrawAPI:(api)=>{excalidrawapi=api;} })
+            React.createElement(ExcalidrawLib.Excalidraw, { viewModeEnabled: role==="Viewer",initialData:elements ,onChange:(e)=>{debouncedOnChange(e)},excalidrawAPI:(api)=>{excalidrawapi=api;} })
         )
     );
     const excalidrawWrapper = document.getElementById("root");

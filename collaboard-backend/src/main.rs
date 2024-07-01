@@ -44,7 +44,7 @@ struct WSState {
 struct RoomState {
     users: Mutex<HashSet<String>>,
     tx: broadcast::Sender<String>,
-    buff:Mutex<String>,
+    buff:Mutex<HashMap<String,String>>,
 }
 
 impl RoomState {
@@ -52,7 +52,7 @@ impl RoomState {
         Self {
             users: Mutex::new(HashSet::new()),
             tx: broadcast::channel(69).0,
-            buff:Mutex::new(String::new())
+            buff:Mutex::new(HashMap::new())
         }
     }
 }
