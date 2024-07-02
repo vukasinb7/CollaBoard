@@ -182,19 +182,22 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
 
     let left = format!("{} left the chat!", email);
     let _ = tx.send(left);
-    let mut rooms = state.rooms.lock().unwrap();
     let mut update_db = false;
-    rooms.get_mut(&board_id).unwrap().users.lock().unwrap().remove(&email);
 
-
-    if rooms.get_mut(&board_id).unwrap().users.lock().unwrap().len() == 0 {
-        update_db = true;
+    {
+        let mut rooms = state.rooms.lock().unwrap();
+        rooms.get_mut(&board_id).unwrap().users.lock().unwrap().remove(&email);
+        if rooms.get_mut(&board_id).unwrap().users.lock().unwrap().len() == 0 {
+            update_db = true;
+        }
     }
     let board_id_cloned = board_id.clone();
     if update_db {
+        println!("DB UPDATING");
         use diesel::prelude::*;
         board_id = board_id_cloned.clone();
         let mut connection = pool.get().unwrap();
+        let mut rooms = state.rooms.lock().unwrap();
 
         let board_id_int = board_id_cloned.parse::<i32>().unwrap();
         let board = boards::table.filter(boards::id.eq(board_id_int)).first::<Board>(&mut connection).unwrap();
@@ -206,6 +209,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
             let parsed_element = serde_json::from_str::<BoardElement>(&element).expect("Unable to parse JSON");
             new_state.insert(parsed_element.id, element);
         }
+
         if let Some(room) = rooms.get_mut(&board_id) {
             let buff = room.buff.lock().unwrap();
             for (key, value) in buff.iter() {
@@ -218,15 +222,10 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         }
 
         let excalidraw_data_json = json!({
-            "type": "excalidraw",
-            "version": 1,
-            "source": "https://excalidraw.com",
             "elements": elements,
             "appState": {
-                "gridSize": "null",
                 "viewBackgroundColor": "#ffffff"
             },
-            "files": {}
     });
         let file_path = board.path.clone();
         let mut file = File::create(file_path).unwrap();

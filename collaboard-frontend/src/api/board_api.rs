@@ -2,6 +2,7 @@ use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use crate::api::user_api::AuthResponse;
+use crate::components::board_card::BoardCardResponse;
 
 
 #[derive(Serialize, Deserialize,Clone,PartialEq)]
@@ -34,14 +35,14 @@ pub async fn add_board(board: &str,token: &str) -> i32 {
     200
 }
 
-pub async fn get_my_boards(token: &str) -> Vec<BoardResponse> {
+pub async fn get_my_boards(token: &str) -> Vec<BoardCardResponse> {
     Request::get("http://localhost:3000/api/board")
         .header("Content-Type", "application/json")
         .header("Authorization", &format!("Bearer {}", token))
         .send()
         .await
         .unwrap()
-        .json::<Vec<BoardResponse>>()
+        .json::<Vec<BoardCardResponse>>()
         .await
         .unwrap()
 

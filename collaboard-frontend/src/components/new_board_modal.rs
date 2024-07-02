@@ -127,7 +127,6 @@ pub fn new_board_modal(props: &Props) -> Html {
 
                         let form_json = serde_json::to_string(&form_data).unwrap();
                         let resp = add_board(&form_json,&token).await;
-                        //CALL CLOSE MODAL HERE
                         close_modal.emit(());
 
 
@@ -152,7 +151,7 @@ pub fn new_board_modal(props: &Props) -> Html {
                 <div style="height:150px;width:100%;display:flex;justify-content:center;align-items:center;flex-direction:column">
                     <TextInput label="Name" name="name" input_type="text" input_ref={name_input_ref} handle_onchange={handle_name_input} errors={&*validation_errors} handle_on_input_blur={validate_input_on_blur.clone()}  />
                 </div>
-                <button style="margin-top:40px;" class="boton-elegante" href="#">{"Sign In"}</button>
+                <button style="margin-top:40px;" class="boton-elegante" href="#">{"Add Board"}</button>
             </form>
           </div>
       </div>

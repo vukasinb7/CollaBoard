@@ -62,4 +62,12 @@ pub struct BoardElement {
     pub id:String,
 }
 
+#[derive(Queryable,Debug, Serialize,Deserialize)]
+pub struct BoardCard {
+    pub id:i32,
+    pub name:String,
+    pub owner:String,
+    pub role:String
+}
+
 

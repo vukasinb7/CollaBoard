@@ -1,5 +1,6 @@
 use std::fs;
 use std::fs::File;
+use std::io::Write;
 use axum::{Extension, Json};
 use axum::extract::{Path};
 use diesel::{BoolExpressionMethods, ExpressionMethods, JoinOnDsl, QueryDsl, RunQueryDsl};
@@ -7,7 +8,7 @@ use serde_json::{json, Value};
 use uuid::Uuid;
 use crate::{DbPool, Error};
 use crate::ctx::Ctx;
-use crate::dto::{BoardPayload, BoardResponse, UpdateBoardPayload};
+use crate::dto::{BoardCard, BoardPayload, BoardResponse, UpdateBoardPayload};
 use crate::model::{Board, NewBoard, Permission, User};
 use crate::schema::{boards, permissions, users};
 
@@ -28,7 +29,15 @@ pub async fn create_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Json(pay
         path: format!("./boards/{}.json", uuid),
         owner_id: user.id,
     };
-    File::create(board.path.clone()).map_err(|_| Error::FailCreatingFile)?;
+    let mut file=File::create(board.path.clone()).map_err(|_| Error::FailCreatingFile)?;
+    let excalidraw_data_json = json!({
+            "elements": [],
+            "appState": {
+                "viewBackgroundColor": "#ffffff"
+            },
+    });
+    let excalidraw_data_string = serde_json::to_string_pretty(&excalidraw_data_json).unwrap();
+    file.write_all(excalidraw_data_string.as_bytes()).unwrap();
 
     let new_board: Board = diesel::insert_into(boards::table)
         .values(&board)
@@ -72,23 +81,45 @@ pub async fn get_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(path_b
     Ok(Json(response))
 }
 
-pub async fn get_my_boards(ctx: Ctx, Extension(pool): Extension<DbPool>) -> Result<Json<Vec<Board>>, Error> {
+pub async fn get_my_boards(ctx: Ctx, Extension(pool): Extension<DbPool>) -> Result<Json<Vec<BoardCard>>, Error> {
     let mut connection = pool.get().map_err(|_| Error::FailToGetPool)?;
     let user = users::table.filter(users::email.eq(&ctx.email))
         .first::<User>(&mut connection)
         .map_err(|_| Error::UserNotFound)?;
 
-    let mut shared_boards = boards::table.inner_join(permissions::table.on(permissions::board_id.eq(&boards::id)))
+    let mut shared_boards = boards::table
+        .inner_join(permissions::table.on(permissions::board_id.eq(boards::id)))
+        .inner_join(users::table.on(users::id.eq(boards::owner_id)))
         .filter(permissions::user_id.eq(&user.id))
-        .select(boards::all_columns)
-        .load::<Board>(&mut connection)
-        .map_err(|_| Error::UserNotFound)?;
+        .select((boards::all_columns,  permissions::role, users::name))
+        .load::<(Board,  i32, String)>(&mut connection)
+        .map_err(|_| Error::UserNotFound)?;;
     let owner_boards = boards::table.filter(boards::owner_id.eq(&user.id))
         .load::<Board>(&mut connection)
         .map_err(|_| Error::UserNotFound)?;
-    shared_boards.extend(owner_boards);
+    let mut response:Vec<BoardCard>=Vec::new();
+    for shared_board in shared_boards {
+        response.push(BoardCard{
+            id: shared_board.0.id,
+            name: shared_board.0.name,
+            owner: shared_board.2,
+            role: match shared_board.1 {1=>"Editor".to_string(),2=>"Owner".to_string(),
+                _ =>"Viewer".to_string()
+            },
+        });
 
-    Ok(Json(shared_boards))
+    }
+    for owner_board in owner_boards {
+        response.push(BoardCard{
+            id: owner_board.id,
+            name: owner_board.name,
+            owner: user.name.clone(),
+            role: "Owner".to_string()
+        });
+
+    }
+
+    Ok(Json(response))
 }
 
 pub async fn delete_board(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(path_board_id): Path<i32>) -> Result<Json<Value>, Error> {

@@ -1,5 +1,6 @@
 use wasm_bindgen_futures::spawn_local;
-use yew::{Callback, function_component, Html, html, Properties, use_effect_with, use_state};
+use web_sys::MouseEvent;
+use yew::{Callback, function_component, Html, html, Properties, use_effect_with, use_state, UseStateHandle};
 use yewdux::use_store;
 
 use crate::api::permission_api::{delete_permission, get_board_permissions, PermissionPayload};
@@ -8,14 +9,10 @@ use crate::store::Store;
 #[derive(Properties, PartialEq)]
 pub struct Props {
     pub(crate) selected_permission:PermissionPayload,
-    pub(crate) id:i32
+    pub(crate) id:i32,
+    pub (crate) version:UseStateHandle<i32>
 }
 
-pub struct DeletePermissionPayload{
-    pub board_id:i32,
-    pub user_email: String,
-    pub user_role: i32,
-}
 
 
 #[function_component(PermissionListItem)]
@@ -30,12 +27,18 @@ pub fn permission_list_item(props: &Props) -> Html {
         let email=email.clone();
         let board_id = board_id.clone();
         let token = token.clone();
-        Callback::from( move |_|{
+        let version=props.version.clone();
+        Callback::from( move |e:MouseEvent|{
+            e.stop_propagation();
             let email=email.clone();
             let board_id = board_id.clone();
             let token = token.clone();
+            let version=version.clone();
             spawn_local(async move {
-                delete_permission(email.clone(), board_id, &token).await;
+                let _=delete_permission(email.clone(), board_id, &token).await;
+
+                version.set((*version)+1);
+
             });
         })
     };

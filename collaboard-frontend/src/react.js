@@ -42,6 +42,12 @@ export function render_excalidraw(email,id,data,role) {
             excalidrawapi.updateScene(elements);
         }
     }
+
+    window.addEventListener('popstate', () => {
+        if (exampleSocket.readyState === WebSocket.OPEN) {
+            exampleSocket.close();
+        }
+    });
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -68,7 +74,7 @@ export function render_excalidraw(email,id,data,role) {
         }
         old_elements=JSON.parse(JSON.stringify(e));
 
-    }, 800);
+    }, 200);
 
     let element = React.createElement(
         React.Fragment,
