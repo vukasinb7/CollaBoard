@@ -66,3 +66,15 @@ pub async fn delete_permission(user_email:String,board_id:i32,token: &str) -> Ap
         .unwrap()
 
 }
+
+pub async fn accept_permission(code:String,token: &str) -> ApiResult{
+    Request::put(&format!("http://localhost:3000/api/invite/accept/{}",code))
+        .header("Content-Type", "application/json")
+        .header("Authorization", &format!("Bearer {}", token))
+        .send()
+        .await
+        .unwrap()
+        .json::<ApiResult>()
+        .await
+        .unwrap()
+}

@@ -2,9 +2,12 @@ use axum::{Extension, Json};
 use axum::extract::{Path, Query};
 use chrono::{Duration, Local};
 use diesel::{ExpressionMethods, Identifiable, QueryDsl, RunQueryDsl};
+use lettre::{Message, SmtpTransport, Transport};
+use lettre::message::{header, MultiPart, SinglePart};
+use lettre::transport::smtp::authentication::{Credentials, Mechanism};
 use rand::Rng;
 use serde_json::{json, Value};
-use crate::{DbPool, Error};
+use crate::{DbPool, Error, utils};
 use crate::ctx::Ctx;
 use crate::dto::{DeletePermissionParams, InvitationPayload, UserPermission};
 use crate::model::{Board, Invitation, NewInvitation, NewPermission, Permission, User};
@@ -41,6 +44,26 @@ pub async fn create_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Jso
         .values(&invitation)
         .get_result(&mut connection)
         .map_err(|_|Error::FailInsertDB)?;
+
+    let email = Message::builder()
+        .from("vukasin.bogdanovic610@gmail.com".parse().unwrap())
+        .to(invited_user.email.clone().parse().unwrap())
+        .subject("Board Invitation")
+        .body(String::from(format!("http://127.0.0.1:8080/invitation/{}",new_invitation.code.clone())))
+
+        .unwrap();
+
+    // Create the SMTP transport
+    let creds = Credentials::new((*utils::constants::SMTP_USERNAME).clone(), (*utils::constants::SMTP_PASSWORD).clone());
+
+    let mailer = SmtpTransport::relay("smtp.gmail.com").unwrap()
+        .credentials(creds)
+        .build();
+
+    // Send the email
+    mailer.send(&email).expect("ERR");
+
+
 
     Ok(Json(new_invitation))
 }

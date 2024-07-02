@@ -77,7 +77,9 @@ pub fn share_modal(props: &Props) -> Html {
 
     let history = use_navigator().unwrap();
     let (_store, store_dispatch) = use_store::<Store>();
-
+    let stop_propagation = {
+        Callback::from(move |e:MouseEvent|{e.stop_propagation();})
+    };
     let validate_input_on_blur = {
         let cloned_form = form.clone();
         let cloned_validation_errors = validation_errors.clone();
@@ -171,7 +173,7 @@ pub fn share_modal(props: &Props) -> Html {
     };
 
     html! {
-      <div id="myModal" class="modal">
+      <div id="myModal" onclick={stop_propagation} class="modal">
           <div class="modal-content">
             <div style="display:flex;justify-content:space-between;flex-direction:row;width:100%">
                 <div style="width:20px"></div>
