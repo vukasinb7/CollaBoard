@@ -138,3 +138,5 @@ Cargo.lock
 /tldraw/dist
 /collaboard-frontend/dist
 /collaboard-frontend/dist
+
+/collaboard-backend/boards/*.json

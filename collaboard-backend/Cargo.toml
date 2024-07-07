@@ -26,3 +26,5 @@ rand = "0.8.5"
 validator = { version = "0.18", features = ["derive"] }
 futures = "0.3.26"
 lettre = { version = "0.11.7" }
+lettre_email = "0.9.4"
+http = "1.1.0"

@@ -7,15 +7,16 @@ use axum::Extension;
 use axum::extract::WebSocketUpgrade;
 use axum::extract::ws::{Message, WebSocket};
 use axum::response::IntoResponse;
-use diesel::{ExpressionMethods, RunQueryDsl};
 use futures::{SinkExt, StreamExt};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json};
 use tokio::sync::broadcast;
 use crate::{DbPool, Error, RoomState, WSState};
+use crate::ctx::Ctx;
 use crate::dto::{BoardElement, UpdateBoardPayload};
 use crate::model::{Board, Permission, User};
 use crate::schema::{boards, permissions, users};
+use crate::utils::jwt::decode_jwt;
 
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -37,13 +38,13 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         if let Message::Text(name) = msg {
             #[derive(Deserialize)]
             struct Connect {
-                email: String,
+                token: String,
                 board_id: String,
             }
             // CONNECT
             let connect: Connect = match serde_json::from_str(&name) {
                 Ok(connect) => connect,
-                Err(err) => {
+                Err(_) => {
                     let _ = sender.send(Message::from("Failed to connect to room!")).await;
                     break;
                 }
@@ -53,7 +54,9 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
                 use diesel::prelude::*;
                 let mut rooms = state.rooms.lock().unwrap();
                 board_id = connect.board_id.clone();
-                email = connect.email.clone();
+                let claim = decode_jwt(connect.token.clone())
+                    .map_err(|_| Error::AuthFailCtxNotInRequestExt ).unwrap().claims;
+                email = claim.email.clone();
                 let mut connection = match pool.get() {
                     Ok(conn) => conn,
                     Err(_) => {
@@ -98,9 +101,8 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
                 let room = rooms.entry(connect.board_id.to_string()).or_insert_with(RoomState::new);
                 tx = Some(room.tx.clone());
 
-                if !room.users.lock().unwrap().contains(&connect.email) {
-                    room.users.lock().unwrap().insert(connect.email.to_owned());
-                    email = connect.email.clone();
+                if !room.users.lock().unwrap().contains(&email.clone()) {
+                    room.users.lock().unwrap().insert(email.clone());
                 }
             }
 
@@ -207,18 +209,23 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         let mut new_state: HashMap<String, String> = HashMap::new();
         for element in json_data.elements {
             let parsed_element = serde_json::from_str::<BoardElement>(&element).expect("Unable to parse JSON");
-            new_state.insert(parsed_element.id, element);
+                new_state.insert(parsed_element.id, element);
         }
 
         if let Some(room) = rooms.get_mut(&board_id) {
             let buff = room.buff.lock().unwrap();
+
             for (key, value) in buff.iter() {
+                let parsed_element = serde_json::from_str::<BoardElement>(&value).expect("Unable to parse JSON");
                 new_state.insert((*key).clone(), (*value).clone());
             }
         }
         let mut elements =vec![];
         for value in new_state.values() {
-            elements.push(json!(value));
+            let parsed_element = serde_json::from_str::<BoardElement>(&value).expect("Unable to parse JSON");
+            if !parsed_element.isDeleted {
+                elements.push(json!(value));
+            }
         }
 
         let excalidraw_data_json = json!({

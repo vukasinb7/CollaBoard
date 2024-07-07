@@ -4,6 +4,7 @@ use yew_router::prelude::use_navigator;
 use yewdux::use_store;
 
 use crate::api::board_api::get_my_boards;
+use crate::api::user_api::whoami;
 use crate::components::board_card::{BoardCard, BoardCardResponse};
 use crate::components::new_board_modal::NewBoardModal;
 use crate::routes::Route;
@@ -35,6 +36,18 @@ pub fn home_page() -> Html {
             history.push(&Route::Login);
         })
     };
+
+    let cloned_history=history.clone();
+    let cloned_token=token.clone();
+    use_effect_with((token.clone()),
+                    move |_| {
+                        spawn_local(async move {
+                            let resp = whoami(&cloned_token).await;
+                            if resp != 200 {
+                                cloned_history.replace(&Route::Login);
+                            }
+                        });
+                    });
 
     {
         let board_list = board_list.clone();

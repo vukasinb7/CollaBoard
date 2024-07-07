@@ -4,6 +4,7 @@ use crate::pages::accept_invitation_page::AcceptInvitationPage;
 use crate::pages::board_page::BoardPage;
 use crate::pages::home_page::{HomePage};
 use crate::pages::login_page::{LoginPage};
+use crate::pages::register_page::RegisterPage;
 
 #[derive(Clone, Routable, PartialEq)]
 pub enum Route {
@@ -11,6 +12,8 @@ pub enum Route {
     Home,
     #[at("/login")]
     Login,
+    #[at("/register")]
+    Register,
     #[at("/board/:id")]
     Board{id:i32},
     #[at("/invitation/:code")]
@@ -26,6 +29,7 @@ pub fn switch(route: Route) -> Html {
         Route::Board {id} => html! { <BoardPage id={id} /> },
         Route::AcceptIntivation {code} => html! { <AcceptInvitationPage code={code} /> },
         Route::Login=> html! { <LoginPage /> },
+        Route::Register=> html! { <RegisterPage /> },
         Route::NotFound => html! { <h1>{ "404" }</h1> },
         _ => html!{<h1>{"Not Found"}</h1>}
     }

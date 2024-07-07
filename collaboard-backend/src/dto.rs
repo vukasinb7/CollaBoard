@@ -60,6 +60,7 @@ pub struct UpdateBoardPayload {
 #[derive(Queryable,Debug, Serialize,Deserialize)]
 pub struct BoardElement {
     pub id:String,
+    pub isDeleted:bool
 }
 
 #[derive(Queryable,Debug, Serialize,Deserialize)]

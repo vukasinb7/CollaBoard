@@ -1,10 +1,12 @@
+use std::fs;
 use axum::{Extension, Json};
 use axum::extract::{Path, Query};
-use chrono::{Duration, Local};
-use diesel::{ExpressionMethods, Identifiable, QueryDsl, RunQueryDsl};
+use chrono::{Duration, Local, Utc};
+use diesel::{BoolExpressionMethods, ExpressionMethods, QueryDsl, RunQueryDsl};
 use lettre::{Message, SmtpTransport, Transport};
-use lettre::message::{header, MultiPart, SinglePart};
-use lettre::transport::smtp::authentication::{Credentials, Mechanism};
+use lettre::message::header::ContentType;
+use lettre::transport::smtp::authentication::{Credentials};
+use lettre_email::EmailBuilder;
 use rand::Rng;
 use serde_json::{json, Value};
 use crate::{DbPool, Error, utils};
@@ -44,13 +46,21 @@ pub async fn create_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Jso
         .values(&invitation)
         .get_result(&mut connection)
         .map_err(|_|Error::FailInsertDB)?;
+    let html_content = fs::read_to_string("./src/email_template.html")
+        .expect("Failed to read email template");
+
+    let rendered_html = html_content.replace("{{board_name}}", &*board.name.clone())
+        .replace("{{issuer_name}}", &*user.email.clone())
+        .replace("{{board_role}}", match new_invitation.role {2=>"Owner",1=>"Editor",_=>"Viewer"  })
+        .replace("{{invitation_link}}", &*String::from(format!("http://127.0.0.1:8080/invitation/{}", new_invitation.code.clone())));
+
 
     let email = Message::builder()
         .from("vukasin.bogdanovic610@gmail.com".parse().unwrap())
         .to(invited_user.email.clone().parse().unwrap())
         .subject("Board Invitation")
-        .body(String::from(format!("http://127.0.0.1:8080/invitation/{}",new_invitation.code.clone())))
-
+        .header(ContentType::TEXT_HTML)
+        .body(rendered_html)
         .unwrap();
 
     // Create the SMTP transport
@@ -61,7 +71,7 @@ pub async fn create_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Jso
         .build();
 
     // Send the email
-    mailer.send(&email).expect("ERR");
+    mailer.send(&email.clone()).expect("ERR");
 
 
 
@@ -78,11 +88,16 @@ pub async fn accept_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Pat
         .first::<Invitation>(&mut connection)
         .map_err(|_|Error::InvitationNotFound)?;
 
+
     if invitation.code.ne(&invitation_code) {
-        Err(Error::InvitationNotFound)?
+        return Err(Error::InvitationNotFound);
     }
     if invitation.user_id.ne(&user.id) {
-        Err(Error::InvitationNotFound)?
+        return Err(Error::InvitationNotFound);
+    }
+    let current_date_time = Utc::now().naive_utc();
+    if invitation.expire<current_date_time{
+        return Err(Error::InvitationExpired);
     }
 
     let permission = NewPermission {
@@ -94,6 +109,10 @@ pub async fn accept_invitation(ctx: Ctx, Extension(pool): Extension<DbPool>, Pat
         .values(&permission)
         .execute(&mut connection)
         .map_err(|_|Error::FailInsertDB)?;
+
+    let _ = diesel::delete(invitations::table.filter(invitations::code.eq(invitation.code)))
+                               .execute(&mut connection)
+                               .map_err(|_| Error::FailDeleteDB);
 
     let body = Json(json!({"success":true}));
     Ok(body)

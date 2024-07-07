@@ -18,6 +18,7 @@ pub async fn login(Extension(pool): Extension<DbPool>, payload: Json<LoginPayloa
 
     let password_hash = sha3::Sha3_256::digest(payload.password.as_bytes());
     let password_hash = format!("{:x}", password_hash);
+
     if user.password.eq(&password_hash.clone()) {
         let token = encode_jwt(payload.email.clone())
             .map_err(|_| Error::TokenEncodingFail)?;

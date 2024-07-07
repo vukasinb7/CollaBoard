@@ -26,14 +26,16 @@ pub enum Error {
     UserNotFound,
     BoardNotFound,
     InvitationNotFound,
+    InvitationExpired
 }
 
 impl IntoResponse for Error {
     fn into_response(self) -> Response {
-        println!("->> {:<12} - {self:?}", "INFO_RES");
-        let mut response = StatusCode::INTERNAL_SERVER_ERROR.into_response();
-        response.extensions_mut().insert(self);
-        response
+        let (status, client_error) = self.client_status_and_error();
+        let body = serde_json::json!({
+            "error": client_error.as_ref(),
+        });
+        (status, axum::Json(body)).into_response()
     }
 }
 
@@ -41,21 +43,24 @@ impl Error {
     pub fn client_status_and_error(&self) -> (StatusCode, ClientError) {
         #[allow(unreachable_patterns)]
         match self {
-            Self::TokenEncodingFail |
             Self::FailToGetPool |
             Self::FailInsertDB |
             Self::FailDeleteDB |
             Self::FailUpdateDB |
             Self::FailCreatingFile => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
 
+
             Self::UserNotFound |
             Self::InvitationNotFound |
             Self::BoardNotFound => (StatusCode::NOT_FOUND, ClientError::INVALID_PARAMS),
+
+            Self::TokenEncodingFail |
             Self::AuthFailNoAuthTokenCookie |
             Self::AuthFailTokenWrongFormat |
             Self::AuthFailCtxNotInRequestExt =>(StatusCode::UNAUTHORIZED, ClientError::NO_AUTH),
 
             Self::PermissionDenied=>(StatusCode::FORBIDDEN,ClientError::NO_AUTH),
+            Self::InvitationExpired |
             Self::BadRequest=>(StatusCode::BAD_REQUEST,ClientError::INVALID_PARAMS),
 
             _ => (
