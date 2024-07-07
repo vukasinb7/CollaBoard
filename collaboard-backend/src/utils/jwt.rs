@@ -1,8 +1,15 @@
 use axum::http::StatusCode;
 use chrono::{Utc, Duration};
 use jsonwebtoken::{decode, DecodingKey, encode, EncodingKey, Header, TokenData, Validation};
-use crate::ctx::Ctx;
+use serde::{Deserialize, Serialize};
 use crate::utils;
+
+#[derive(Clone, Debug,Serialize,Deserialize)]
+pub struct Ctx {
+    pub exp: usize,
+    pub iat: usize,
+    pub email: String,
+}
 
 pub fn encode_jwt(email: String) -> Result<String, StatusCode> {
     let now = Utc::now();

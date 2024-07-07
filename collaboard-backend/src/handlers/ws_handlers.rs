@@ -8,20 +8,19 @@ use axum::extract::WebSocketUpgrade;
 use axum::extract::ws::{Message, WebSocket};
 use axum::response::IntoResponse;
 use futures::{SinkExt, StreamExt};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize};
 use serde_json::{json};
 use tokio::sync::broadcast;
 use crate::{DbPool, Error, RoomState, WSState};
-use crate::ctx::Ctx;
-use crate::dto::{BoardElement, UpdateBoardPayload};
+use crate::dto::{BoardElement, DrawingPayload, UpdateBoardPayload};
 use crate::model::{Board, Permission, User};
 use crate::schema::{boards, permissions, users};
 use crate::utils::jwt::decode_jwt;
 
-
-#[derive(Debug, Serialize, Deserialize)]
-struct DrawingPayload {
-    id: String,
+#[derive(Deserialize)]
+struct Connect {
+    pub token: String,
+    pub board_id: String,
 }
 
 pub async fn handler(ws: WebSocketUpgrade, Extension(state): Extension<Arc<WSState>>, Extension(pool): Extension<DbPool>) -> impl IntoResponse {
@@ -30,18 +29,15 @@ pub async fn handler(ws: WebSocketUpgrade, Extension(state): Extension<Arc<WSSta
 
 async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
     let (mut sender, mut receiver) = socket.split();
+
     let mut email = String::new();
     let mut board_id = String::new();
     let mut tx = None::<broadcast::Sender<String>>;
     let mut message = "";
     while let Some(Ok(msg)) = receiver.next().await {
         if let Message::Text(name) = msg {
-            #[derive(Deserialize)]
-            struct Connect {
-                token: String,
-                board_id: String,
-            }
-            // CONNECT
+
+            // -- Connect to WS
             let connect: Connect = match serde_json::from_str(&name) {
                 Ok(connect) => connect,
                 Err(_) => {
@@ -53,10 +49,12 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
             {
                 use diesel::prelude::*;
                 let mut rooms = state.rooms.lock().unwrap();
-                board_id = connect.board_id.clone();
                 let claim = decode_jwt(connect.token.clone())
                     .map_err(|_| Error::AuthFailCtxNotInRequestExt ).unwrap().claims;
+
+                board_id = connect.board_id.clone();
                 email = claim.email.clone();
+
                 let mut connection = match pool.get() {
                     Ok(conn) => conn,
                     Err(_) => {
@@ -71,18 +69,23 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
                         break;
                     }
                 };
-                let user = match users::table.filter(users::email.eq(email.clone())).first::<User>(&mut connection) {
+                let user = match users::table
+                    .filter(users::email.eq(email.clone()))
+                    .first::<User>(&mut connection) {
                     Ok(user) => user,
                     Err(_) => {
                         message = "User does not exist!";
                         break;
                     }
                 };
-                let board = match boards::table.filter(boards::id.eq(board_id_int)).first::<Board>(&mut connection) {
+                let _ = match boards::table
+                    .filter(boards::id.eq(board_id_int))
+                    .first::<Board>(&mut connection) {
                     Ok(board) => {
                         if user.id.ne(&board.owner_id) {
                             match permissions::table
-                                .filter(permissions::user_id.eq(&user.id).and(permissions::board_id.eq(&board.id)))
+                                .filter(permissions::user_id.eq(&user.id)
+                                    .and(permissions::board_id.eq(&board.id)))
                                 .first::<Permission>(&mut connection) {
                                 Err(_) => {
                                     message = "Board does not exist";
@@ -91,29 +94,28 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
                                 _ => {}
                             }
                         }
-                        board
                     }
                     Err(_) => {
                         message = "Board does not exist";
                         break;
                     }
                 };
-                let room = rooms.entry(connect.board_id.to_string()).or_insert_with(RoomState::new);
-                tx = Some(room.tx.clone());
+                let room = rooms.
+                    entry(connect.board_id.to_string())
+                    .or_insert_with(RoomState::new);
 
+                tx = Some(room.tx.clone());
                 if !room.users.lock().unwrap().contains(&email.clone()) {
                     room.users.lock().unwrap().insert(email.clone());
                 }
             }
 
-
             if tx.is_some() && !email.is_empty() {
                 break;
             } else {
                 let _ = sender
-                    .send(Message::Text(String::from("Username already taken.")))
+                    .send(Message::Text(String::from("You are already connected.")))
                     .await;
-
                 return;
             }
         }
@@ -122,27 +124,26 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         let _ = sender
             .send(Message::Text(String::from(message)))
             .await;
-        message = "";
         return;
     }
+
     let tx = tx.unwrap();
     let mut rx = tx.subscribe();
 
     let joined = format!("{} joined the chat!", email);
     let _ = tx.send(joined);
+    let mut session_elements: Vec<String> = Vec::new();
 
-
-    let mut needed_elements: Vec<String> = Vec::new();
     {
         let mut rooms = state.rooms.lock().unwrap();
         if let Some(room) = rooms.get_mut(&board_id) {
             let buff = room.buff.lock().unwrap();
-            for (key, value) in buff.iter() {
-                needed_elements.push((*value).clone())
+            for value in buff.values() {
+                session_elements.push((*value).clone())
             }
         }
     }
-    for element in needed_elements {
+    for element in session_elements {
         let _ = sender.send(Message::Text(format!("system:{}", element))).await;
     }
 
@@ -169,10 +170,10 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
     });
     let mut send_messages = {
         let tx = tx.clone();
-        let name = email.clone();
+        let email = email.clone();
         tokio::spawn(async move {
             while let Some(Ok(Message::Text(text))) = receiver.next().await {
-                let _ = tx.send(format!("{}: {}", name, text));
+                let _ = tx.send(format!("{}: {}", email, text));
             }
         })
     };
@@ -185,7 +186,6 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
     let left = format!("{} left the chat!", email);
     let _ = tx.send(left);
     let mut update_db = false;
-
     {
         let mut rooms = state.rooms.lock().unwrap();
         rooms.get_mut(&board_id).unwrap().users.lock().unwrap().remove(&email);
@@ -193,9 +193,9 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
             update_db = true;
         }
     }
+
     let board_id_cloned = board_id.clone();
     if update_db {
-        println!("DB UPDATING");
         use diesel::prelude::*;
         board_id = board_id_cloned.clone();
         let mut connection = pool.get().unwrap();
@@ -209,14 +209,12 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         let mut new_state: HashMap<String, String> = HashMap::new();
         for element in json_data.elements {
             let parsed_element = serde_json::from_str::<BoardElement>(&element).expect("Unable to parse JSON");
-                new_state.insert(parsed_element.id, element);
+            new_state.insert(parsed_element.id, element);
         }
 
         if let Some(room) = rooms.get_mut(&board_id) {
             let buff = room.buff.lock().unwrap();
-
             for (key, value) in buff.iter() {
-                let parsed_element = serde_json::from_str::<BoardElement>(&value).expect("Unable to parse JSON");
                 new_state.insert((*key).clone(), (*value).clone());
             }
         }
@@ -228,7 +226,7 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
             }
         }
 
-        let excalidraw_data_json = json!({
+        let data_json = json!({
             "elements": elements,
             "appState": {
                 "viewBackgroundColor": "#ffffff"
@@ -237,8 +235,8 @@ async fn handle_socket(socket: WebSocket, state: Arc<WSState>, pool: DbPool) {
         let file_path = board.path.clone();
         let mut file = File::create(file_path).unwrap();
 
-        let excalidraw_data_string = serde_json::to_string_pretty(&excalidraw_data_json).unwrap();
-        file.write_all(excalidraw_data_string.as_bytes()).unwrap();
+        let data_string = serde_json::to_string_pretty(&data_json).unwrap();
+        file.write_all(data_string.as_bytes()).unwrap();
         rooms.remove(&board_id);
     }
 }

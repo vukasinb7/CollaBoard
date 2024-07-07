@@ -8,14 +8,13 @@ use serde::Serialize;
 pub enum Error {
     // -- Validation error
     BadRequest,
-
     // -- DB errors.
     FailToGetPool,
     FailInsertDB,
     FailDeleteDB,
     FailUpdateDB,
     FailCreatingFile,
-
+    FailSendingMail,
     // -- Auth errors.
     PermissionDenied,
     TokenEncodingFail,
@@ -47,6 +46,7 @@ impl Error {
             Self::FailInsertDB |
             Self::FailDeleteDB |
             Self::FailUpdateDB |
+            Self::FailSendingMail |
             Self::FailCreatingFile => (StatusCode::INTERNAL_SERVER_ERROR, ClientError::SERVICE_ERROR),
 
 

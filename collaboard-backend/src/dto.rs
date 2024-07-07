@@ -12,7 +12,6 @@ pub struct BoardPayload {
     #[validate(length(min=1))]
     pub name: String
 }
-
 #[derive(Debug, Serialize)]
 pub struct UserResponse{
 
@@ -20,7 +19,6 @@ pub struct UserResponse{
     pub surname:String,
     pub email:String
 }
-
 #[derive(Debug,Validate,Deserialize)]
 pub struct InvitationPayload{
     #[validate(email)]
@@ -50,25 +48,33 @@ pub struct BoardResponse {
     pub data:String,
     pub role:String
 }
-
-
 #[derive(Queryable,Debug, Serialize,Deserialize)]
 pub struct UpdateBoardPayload {
     pub elements:Vec<String>
 }
-
 #[derive(Queryable,Debug, Serialize,Deserialize)]
+#[allow(non_snake_case)]
 pub struct BoardElement {
     pub id:String,
     pub isDeleted:bool
 }
-
 #[derive(Queryable,Debug, Serialize,Deserialize)]
 pub struct BoardCard {
     pub id:i32,
     pub name:String,
     pub owner:String,
     pub role:String
+}
+
+#[derive(Debug, Serialize,Deserialize)]
+pub struct AuthResponse {
+    pub token:String,
+    pub email:String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct DrawingPayload {
+    pub(crate) id: String,
 }
 
 

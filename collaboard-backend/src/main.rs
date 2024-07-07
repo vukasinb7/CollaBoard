@@ -23,8 +23,6 @@ mod error;
 mod routes;
 mod model;
 mod utils;
-mod ctx;
-
 mod schema;
 mod handlers;
 mod dto;

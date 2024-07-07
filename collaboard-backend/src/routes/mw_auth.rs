@@ -12,7 +12,7 @@ use axum_extra::TypedHeader;
 use jsonwebtoken::{decode, DecodingKey, Validation};
 
 use crate::{Error, utils};
-use crate::ctx::Ctx;
+use crate::utils::jwt::Ctx;
 use crate::utils::jwt::decode_jwt;
 
 pub async fn guard(mut req: Request<Body>, next: Next) -> Result<Response,Error> {

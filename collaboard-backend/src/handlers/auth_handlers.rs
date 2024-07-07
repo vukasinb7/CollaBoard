@@ -3,8 +3,8 @@ use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde_json::{json, Value};
 use sha3::Digest;
 use crate::{DbPool, Error};
-use crate::ctx::Ctx;
-use crate::dto::{LoginPayload, UserResponse};
+use crate::utils::jwt::Ctx;
+use crate::dto::{AuthResponse, LoginPayload, UserResponse};
 use crate::model::{NewUser, User};
 use crate::schema::users;
 use crate::utils::jwt::encode_jwt;
@@ -23,7 +23,8 @@ pub async fn login(Extension(pool): Extension<DbPool>, payload: Json<LoginPayloa
         let token = encode_jwt(payload.email.clone())
             .map_err(|_| Error::TokenEncodingFail)?;
 
-        let body = Json(json!({"token":token,"email":user.email}));
+        let response= AuthResponse{ token, email: user.email };
+        let body = Json(json!(response));
         Ok(body)
     } else {
         Err(Error::UserNotFound)
@@ -38,6 +39,7 @@ pub async fn register(Extension(pool): Extension<DbPool>, Json(mut user): Json<N
     user.password=password_hash.clone();
 
     let mut connection = pool.get().map_err(|_|Error::FailToGetPool)?;
+
     diesel::insert_into(users::table)
         .values(&user).execute(&mut connection)
         .map_err(|_| Error::FailInsertDB)?;
@@ -47,7 +49,8 @@ pub async fn register(Extension(pool): Extension<DbPool>, Json(mut user): Json<N
 }
 pub async fn who_am_i(ctx:Ctx,Extension(pool): Extension<DbPool>)->Result<Json<UserResponse>,Error>{
     let mut connection = pool.get().map_err(|_| Error::FailToGetPool)?;
-    let user = users::table.filter(users::email.eq(ctx.email.clone()))
+    let user = users::table
+        .filter(users::email.eq(&ctx.email))
         .first::<User>(&mut connection)
         .map_err(|_| Error::UserNotFound)?;
 
