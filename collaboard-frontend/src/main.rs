@@ -14,7 +14,7 @@ use crate::routes::{Route, switch};
 fn app() -> Html {
     html! {
         <BrowserRouter>
-            <Switch<Route> render={switch} /> // <- must be child of <BrowserRouter>
+            <Switch<Route> render={switch} />
         </BrowserRouter>
     }
 }

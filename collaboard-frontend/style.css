@@ -241,8 +241,6 @@
 }
 
 
-
-
 /* ----- BUTTON DESIGN ----- */
 .boton-elegante {
     padding: 8px 40px;
@@ -258,7 +256,6 @@
     overflow: hidden;
     font-weight: bold;
 }
-
 .boton-elegante::after {
     content: "";
     position: absolute;
@@ -274,15 +271,14 @@
     transform: scale(0);
     transition: transform 0.5s ease;
 }
-
 .boton-elegante:hover::after {
     transform: scale(4);
 }
-
 .boton-elegante:hover {
     border-color: #31ccb0;
     background: #31ccb0;
 }
+
 
 /* ----- FAB BUTTON ----- */
 .fab {
@@ -310,7 +306,6 @@
     justify-content: center;
     align-items: center;
 }
-
 .fab::after {
     content: "";
     position: absolute;
@@ -324,20 +319,16 @@
     transform: scale(0);
     transition: transform 0.5s ease;
 }
-
 .fab:hover::after {
     transform: scale(4);
 }
-
 .fab:hover {
     border-color: #4574e0;
     background: #4574e0;
 }
 
 
-
-
-/* ----- FAB BUTTON ----- */
+/* ----- FAB BUTTON LOGOUT ----- */
 .fab-logout {
     cursor: pointer;
     outline: none;
@@ -359,7 +350,6 @@
     justify-content: center;
     align-items: center;
 }
-
 .fab-logout:hover {
     background: darkgrey;
 }

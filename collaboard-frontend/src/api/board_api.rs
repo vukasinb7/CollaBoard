@@ -1,10 +1,7 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
-use crate::api::permission_api::ApiResult;
-use crate::api::user_api::AuthResponse;
-use crate::components::board_card::BoardCardResponse;
 
+use crate::api::permission_api::ApiResult;
 
 #[derive(Serialize, Deserialize,Clone,PartialEq)]
 pub struct BoardResponse {
@@ -19,6 +16,14 @@ pub struct SingleBoardResponse {
     pub id:i32,
     pub name:String,
     pub data:String,
+    pub role:String
+}
+
+#[derive(Debug, Serialize,Deserialize,Clone,PartialEq)]
+pub struct BoardCardResponse {
+    pub id:i32,
+    pub name:String,
+    pub owner:String,
     pub role:String
 }
 pub async fn add_board(board: &str,token: &str) -> i32 {

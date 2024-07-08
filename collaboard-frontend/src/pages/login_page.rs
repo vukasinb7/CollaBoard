@@ -1,19 +1,19 @@
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
+
 use serde::{Deserialize, Serialize};
-use yew::prelude::*;
 use validator::{Validate, ValidationErrors};
 use web_sys::HtmlInputElement;
 use yew::platform::spawn_local;
+use yew::prelude::*;
 use yew_router::prelude::use_navigator;
 use yewdux::use_store;
-use crate::api::board_api::get_board;
+
 use crate::api::user_api::{login, whoami};
-use crate::components::form_input::TextInput;
+use crate::components::atoms::form_input::TextInput;
 use crate::routes::Route;
 use crate::store::{login_reducer, Store};
-
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 struct LoginUserSchema {
@@ -61,7 +61,7 @@ pub fn login_page() -> Html {
 
     let cloned_history=history.clone();
     let cloned_token=token.clone();
-    use_effect_with((token),
+    use_effect_with(token,
     move |_| {
         wasm_bindgen_futures::spawn_local(async move {
             let resp = whoami(&cloned_token).await;
@@ -100,7 +100,7 @@ pub fn login_page() -> Html {
                             cloned_validation_errors
                                 .borrow_mut()
                                 .errors_mut()
-                                .insert(field_name.clone(), error.clone());
+                                .insert(field_name, error.clone());
                         }
                     }
                 }
@@ -171,8 +171,7 @@ pub fn login_page() -> Html {
             <div class="column login-modal-background">
                 <img src="static/loginbg.jpg"  alt="rust image"/>
             </div>
-
         </div>
-        </div>
+      </div>
     }
 }

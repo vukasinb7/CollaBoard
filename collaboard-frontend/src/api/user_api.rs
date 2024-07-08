@@ -1,14 +1,15 @@
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use crate::api::board_api::BoardResponse;
+
 use crate::api::permission_api::ApiResult;
 
-#[derive(Serialize, Deserialize,Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct AuthResponse {
     pub token: String,
-    pub email: String
+    pub email: String,
 }
-pub async fn login(credentials:&str) -> AuthResponse {
+
+pub async fn login(credentials: &str) -> AuthResponse {
     Request::post(&format!("{}/login", "http://localhost:3000/api"))
         .header("content-type", "application/json")
         .body(
@@ -21,7 +22,8 @@ pub async fn login(credentials:&str) -> AuthResponse {
         .await
         .unwrap()
 }
-pub async fn register(credentials:&str) -> ApiResult {
+
+pub async fn register(credentials: &str) -> ApiResult {
     Request::post(&format!("{}/register", "http://localhost:3000/api"))
         .header("content-type", "application/json")
         .body(
@@ -44,5 +46,4 @@ pub async fn whoami(token: &str) -> i32 {
         .unwrap().status();
 
     response as i32
-
 }

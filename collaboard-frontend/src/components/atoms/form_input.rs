@@ -61,6 +61,9 @@ pub fn form_input_component(props: &Props) -> Html {
                 onblur={on_blur}
                 ref={props.input_ref.clone()}/>
           <label for={props.name.clone()} class="form__label">{props.label.clone()}</label>
+        <span style="color:red; font-size:12px">
+            {error_message}
+        </span>
         </div>
     }
 }

@@ -1,20 +1,20 @@
 use std::cell::RefCell;
 use std::ops::Deref;
 use std::rc::Rc;
+
 use serde::{Deserialize, Serialize};
-use yew::prelude::*;
 use validator::{Validate, ValidationErrors};
 use web_sys::HtmlInputElement;
 use yew::platform::spawn_local;
+use yew::prelude::*;
 use yew_router::prelude::use_navigator;
 use yewdux::use_store;
-use crate::api::board_api::get_board;
-use crate::api::user_api;
-use crate::api::user_api::{login, register, whoami};
-use crate::components::form_input::TextInput;
-use crate::routes::Route;
-use crate::store::{login_reducer, Store};
 
+use crate::api::user_api;
+use crate::api::user_api::whoami;
+use crate::components::atoms::form_input::TextInput;
+use crate::routes::Route;
+use crate::store::Store;
 
 #[derive(Validate, Debug, Default, Clone, Serialize, Deserialize)]
 struct RegisterSchema {
@@ -69,12 +69,12 @@ pub fn register() -> Html {
     let validation_errors = use_state(|| Rc::new(RefCell::new(ValidationErrors::new())));
 
     let history = use_navigator().unwrap();
-    let (store, store_dispatch) = use_store::<Store>();
+    let (store, _) = use_store::<Store>();
     let token = store.token.clone();
 
     let cloned_history=history.clone();
     let cloned_token=token.clone();
-    use_effect_with((token),
+    use_effect_with(token,
                     move |_| {
                         wasm_bindgen_futures::spawn_local(async move {
                             let resp = whoami(&cloned_token).await;
@@ -116,7 +116,7 @@ pub fn register() -> Html {
                             cloned_validation_errors
                                 .borrow_mut()
                                 .errors_mut()
-                                .insert(field_name.clone(), error.clone());
+                                .insert(field_name, error.clone());
                         }
                     }
                 }
@@ -135,7 +135,6 @@ pub fn register() -> Html {
         let cloned_confirm_password_input_ref = confirm_password_input_ref.clone();
 
         let cloned_history = history.clone();
-        let cloned_store_dispatch = store_dispatch.clone();
 
         let cloned_validation_errors = validation_errors.clone();
         Callback::from(move |event: SubmitEvent| {
@@ -150,7 +149,6 @@ pub fn register() -> Html {
             let confirm_password_input_ref = cloned_confirm_password_input_ref.clone();
 
             let history = cloned_history.clone();
-            let store_dispatch = cloned_store_dispatch.clone();
 
             spawn_local(async move {
                 match form.validate() {
@@ -170,7 +168,7 @@ pub fn register() -> Html {
                         confirm_password_input.set_value("");
 
                         let form_json = serde_json::to_string(&form_data).unwrap();
-                        let resp = user_api::register(&form_json).await;
+                        let _ = user_api::register(&form_json).await;
                         history.push(&Route::Login);
                     }
                     Err(e) => {

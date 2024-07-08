@@ -1,9 +1,6 @@
 use chrono::NaiveDateTime;
 use reqwasm::http::Request;
 use serde::{Deserialize, Serialize};
-use crate::api::board_api::BoardResponse;
-use crate::api::user_api::AuthResponse;
-
 
 #[derive(Serialize, Deserialize,Clone,PartialEq)]
 pub struct InvitationPayload {
@@ -20,19 +17,21 @@ pub struct PermissionPayload{
     pub email: String,
     pub permission_type:i32,
 }
+#[derive(Serialize, Deserialize,Clone,PartialEq)]
+pub struct ApiResult{
+    success:bool
+}
+
 pub async fn invite_user(form_data: &str,token: &str) -> bool {
-    let response = Request::post("http://localhost:3000/api/invite")
+    let status = Request::post("http://localhost:3000/api/invite")
         .header("Content-Type", "application/json")
         .header("Authorization", &format!("Bearer {}", token))
         .body(form_data.to_string())
         .send()
         .await
-        .unwrap()
-        .json::<InvitationPayload>()
-        .await
-        .unwrap();
+        .unwrap().status();
 
-    response.id>0
+    status==200
 }
 
 pub async fn get_board_permissions(board_id:i32,token: &str) -> Vec<PermissionPayload> {
@@ -48,11 +47,7 @@ pub async fn get_board_permissions(board_id:i32,token: &str) -> Vec<PermissionPa
 
 }
 
-#[derive(Serialize, Deserialize,Clone,PartialEq)]
 
-pub struct ApiResult{
-    success:bool
-}
 
 pub async fn delete_permission(user_email:String,board_id:i32,token: &str) -> ApiResult{
     Request::delete(&format!("http://localhost:3000/api/permission?user_email={}&board_id={}",user_email,board_id))

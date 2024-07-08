@@ -1,5 +1,3 @@
-
-
 use serde::{Deserialize, Serialize};
 use yewdux::prelude::*;
 use crate::api::user_api::AuthResponse;
@@ -19,7 +17,6 @@ impl Default for Store {
         }
     }
 }
-
 
 pub fn login_reducer(auth_response: AuthResponse, dispatch: Dispatch<Store>) {
     dispatch.reduce_mut(move |store| {

@@ -30,7 +30,7 @@ pub struct Props {
     pub onchange: Callback<String>,
 }
 
-#[styled_component(BBSelect)]
+#[styled_component(SelectInput)]
 pub fn bb_select(props: &Props) -> Html {
     let stylesheet = Style::new(css!(
         r#"
