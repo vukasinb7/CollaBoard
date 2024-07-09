@@ -46,14 +46,12 @@ fn get_input_callback(
 #[function_component(LoginPage)]
 pub fn login_page() -> Html {
     let form = use_state(|| LoginUserSchema::default());
-
     let email_input_ref = NodeRef::default();
     let password_input_ref = NodeRef::default();
-
     let handle_email_input = get_input_callback("email", form.clone());
     let handle_password_input = get_input_callback("password", form.clone());
-
     let validation_errors = use_state(|| Rc::new(RefCell::new(ValidationErrors::new())));
+    let error_message=use_state(||" ".to_string());
 
     let history = use_navigator().unwrap();
     let (store, store_dispatch) = use_store::<Store>();
@@ -72,32 +70,32 @@ pub fn login_page() -> Html {
     });
 
     let validate_input_on_blur = {
-        let cloned_form = form.clone();
-        let cloned_validation_errors = validation_errors.clone();
+        let form = form.clone();
+        let validation_errors = validation_errors.clone();
         Callback::from(move |(name, value): (String, String)| {
-            let mut data = cloned_form.deref().clone();
+            let mut data = form.deref().clone();
             match name.as_str() {
                 "email" => data.email = value,
                 "password" => data.password = value,
                 _ => (),
             }
-            cloned_form.set(data);
+            form.set(data);
 
-            match cloned_form.validate() {
+            match form.validate() {
                 Ok(_) => {
-                    cloned_validation_errors
+                    validation_errors
                         .borrow_mut()
                         .errors_mut()
                         .remove(name.as_str());
                 }
                 Err(errors) => {
-                    cloned_validation_errors
+                    validation_errors
                         .borrow_mut()
                         .errors_mut()
                         .retain(|key, _| key != &name);
                     for (field_name, error) in errors.errors() {
                         if field_name == &name {
-                            cloned_validation_errors
+                            validation_errors
                                 .borrow_mut()
                                 .errors_mut()
                                 .insert(field_name, error.clone());
@@ -109,25 +107,26 @@ pub fn login_page() -> Html {
     };
 
     let on_submit = {
-        let cloned_form = form.clone();
+        let form = form.clone();
+        let email_input_ref = email_input_ref.clone();
+        let password_input_ref = password_input_ref.clone();
+        let history = history.clone();
+        let store_dispatch = store_dispatch.clone();
+        let error_message=error_message.clone();
 
-        let cloned_email_input_ref = email_input_ref.clone();
-        let cloned_password_input_ref = password_input_ref.clone();
-
-        let cloned_history = history.clone();
-        let cloned_store_dispatch = store_dispatch.clone();
-
-        let cloned_validation_errors = validation_errors.clone();
+        let validation_errors = validation_errors.clone();
         Callback::from(move |event: SubmitEvent| {
             event.prevent_default();
-            let form = cloned_form.clone();
-            let validation_errors = cloned_validation_errors.clone();
+            let form = form.clone();
+            let validation_errors = validation_errors.clone();
 
-            let email_input_ref = cloned_email_input_ref.clone();
-            let password_input_ref = cloned_password_input_ref.clone();
+            let email_input_ref = email_input_ref.clone();
+            let password_input_ref = password_input_ref.clone();
 
-            let history = cloned_history.clone();
-            let store_dispatch = cloned_store_dispatch.clone();
+            let history = history.clone();
+            let store_dispatch = store_dispatch.clone();
+            let error_message=error_message.clone();
+
 
             spawn_local(async move {
                 match form.validate() {
@@ -137,13 +136,19 @@ pub fn login_page() -> Html {
                         let email_input = email_input_ref.cast::<HtmlInputElement>().unwrap();
                         let password_input = password_input_ref.cast::<HtmlInputElement>().unwrap();
 
-                        email_input.set_value("");
                         password_input.set_value("");
-
                         let form_json = serde_json::to_string(&form_data).unwrap();
                         let resp = login(&form_json).await;
-                        history.push(&Route::Home);
-                        login_reducer(resp, store_dispatch);
+                        match resp {
+                            Ok(data) => {
+                                history.push(&Route::Home);
+                                login_reducer(data, store_dispatch);
+                                email_input.set_value("");
+                            }
+                            Err(error) => {
+                                error_message.set(error.clone());
+                            }
+                        }
                     }
                     Err(e) => {
                         validation_errors.set(Rc::new(RefCell::new(e)));
@@ -155,8 +160,8 @@ pub fn login_page() -> Html {
 
 
     html! {
-      <div id="login-container">
-        <div id="login-modal">
+      <div class="login-container">
+        <div class="login-modal">
             <div class="column login-form-container">
                 <p>{"Sign In"}</p>
                 <img src="static/logo.png" style="width:300px;margin-bottom:30px"  alt="logo image"/>
@@ -165,7 +170,9 @@ pub fn login_page() -> Html {
                         <TextInput label="Email" name="email" input_type="email" input_ref={email_input_ref} handle_onchange={handle_email_input} errors={&*validation_errors} handle_on_input_blur={validate_input_on_blur.clone()}  />
                         <TextInput label="Password" name="password" input_type="password" input_ref={password_input_ref} handle_onchange={handle_password_input} errors={&*validation_errors} handle_on_input_blur={validate_input_on_blur.clone()}  />
                     </div>
-                    <button style="margin-top:40px;" class="boton-elegante" href="#">{"Sign In"}</button>
+                    <p style="color:red;font-size:12px;margin-top:35px;margin-bottom:0px">{&*error_message}</p>
+                    <button style="margin-top:5px;" class="boton-elegante" href="#">{"Sign In"}</button>
+                    <span style="font-size:14px;margin-top:7px">{"Dont have account?"} <a href="/register">{"Sign up"}</a></span>
                 </form>
             </div>
             <div class="column login-modal-background">

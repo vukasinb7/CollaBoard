@@ -18,6 +18,7 @@ pub fn home_page() -> Html {
     let token = store.token.clone();
     let history = use_navigator().unwrap();
 
+
     let open_modal = {
         let show_modal = is_open.clone();
         Callback::from(move |_| show_modal.set(true))
@@ -40,7 +41,6 @@ pub fn home_page() -> Html {
 
     let cloned_history = history.clone();
     let cloned_token = token.clone();
-
     use_effect_with(token.clone(),
                     move |_| {
                         spawn_local(async move {
@@ -50,7 +50,6 @@ pub fn home_page() -> Html {
                             }
                         });
                     });
-
     {
         let board_list = board_list.clone();
         let token = token.clone();
@@ -66,7 +65,8 @@ pub fn home_page() -> Html {
     }
     html! {
       <div id="home-container">
-        <h1 style="margin:0;">{"Boards"}</h1>
+        <h1 style="margin-top:45px;margin-bottom:10px;font-weight:600">{"Boards"}</h1>
+        <div style="width:70%;border:1px solid #55AD9B;"/>
         <div class="home-grid-container">
           {for board_list.iter().map(|board| html! {
               <BoardCard key={board.id} selected_board={board.clone()}/>

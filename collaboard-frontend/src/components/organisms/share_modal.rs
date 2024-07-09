@@ -13,6 +13,7 @@ use yewdux::use_store;
 use crate::api::permission_api::invite_user;
 use crate::components::atoms::form_input::TextInput;
 use crate::components::atoms::form_select::{SelectInput, SelectOption};
+use crate::components::atoms::toast_notification::toast_notification;
 use crate::components::molecules::permission_list::PermissionList;
 use crate::store::Store;
 
@@ -132,6 +133,7 @@ pub fn share_modal(props: &Props) -> Html {
             spawn_local(async move {
                 match form.validate() {
                     Ok(_) => {
+                        toast_notification("Info".to_string(), "Sending invitation...".to_string());
                         let form_data = form.deref().clone();
                         let email_input = email_input_ref.cast::<HtmlInputElement>().unwrap();
 
@@ -149,6 +151,8 @@ pub fn share_modal(props: &Props) -> Html {
                         let _ = invite_user(&form_json,&token).await;
                         email_input.set_value("");
                         version.set((*version)+1);
+                        toast_notification("Info".to_string(), "Invitation sent successfully".to_string());
+
                     }
 
                     Err(e) => {

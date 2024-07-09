@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use serde::{Deserialize, Serialize};
 use validator::{Validate, ValidationErrors};
+use crate::components::atoms::toast_notification::toast_notification;
 use web_sys::HtmlInputElement;
 use yew::platform::spawn_local;
 use yew::prelude::*;
@@ -111,6 +112,7 @@ pub fn new_board_modal(props: &Props) -> Html {
                         let form_json = serde_json::to_string(&form_data).unwrap();
                         let _ = add_board(&form_json,&token).await;
                         close_modal.emit(());
+                        toast_notification("Info".to_string(),format!("Created board {}",form_data.name))
                     }
                     Err(e) => {
                         validation_errors.set(Rc::new(RefCell::new(e)));
@@ -132,7 +134,7 @@ pub fn new_board_modal(props: &Props) -> Html {
                 <div style="height:150px;width:100%;display:flex;justify-content:center;align-items:center;flex-direction:column">
                     <TextInput label="Name" name="name" input_type="text" input_ref={name_input_ref} handle_onchange={handle_name_input} errors={&*validation_errors} handle_on_input_blur={validate_input_on_blur.clone()}  />
                 </div>
-                <button style="margin-top:40px;" class="boton-elegante" href="#">{"Add Board"}</button>
+                <button style="margin-top:10px;" class="boton-elegante" href="#">{"Add Board"}</button>
             </form>
           </div>
       </div>

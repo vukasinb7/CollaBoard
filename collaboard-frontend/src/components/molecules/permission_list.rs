@@ -32,7 +32,7 @@ pub fn permission_list(props: &Props) -> Html {
         });
     }
     html! {
-          <div style="display:flex;justify-content:center;flex-direction:column;align-items:center;">
+          <div style="display:flex;justify-content:center;flex-direction:column;align-items:center; padding:10px">
             {for permission_list.iter().map(|permission| html! {
                 <PermissionListItem version={props.version.clone()} selected_permission={permission.clone()} id={board_id}/>
             })}

@@ -94,3 +94,11 @@ export function render_excalidraw(token, id, data, role) {
 
     ReactDOM.render(element, excalidrawWrapper);
 }
+
+export function toast(title,message){
+    jSuites.notification({
+        name: title,
+        message: message,
+        position: 'top'
+    })
+}

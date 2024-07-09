@@ -3,6 +3,8 @@ use axum::{Extension, Json};
 use axum::extract::{Path, Query};
 use chrono::{Duration, Local, Utc};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use diesel::dsl::now;
+use diesel::sql_types::Integer;
 use lettre::{Message, SmtpTransport, Transport};
 use lettre::message::header::ContentType;
 use lettre::transport::smtp::authentication::{Credentials};
@@ -217,14 +219,24 @@ pub async fn get_permission(ctx: Ctx, Extension(pool): Extension<DbPool>, Path(b
             .map_err(|_| Error::PermissionDenied)?;
     }
 
-    let results = users::table
+    let mut permissions = users::table
         .inner_join(permissions::table.on(permissions::user_id.eq(users::id)))
         .filter(permissions::board_id.eq(board_id))
         .select((users::email, permissions::role))
         .load::<UserPermission>(&mut connection)
         .map_err(|_| Error::UserNotFound)?;
 
-    let body = Json(json!(results));
+
+    let mut pendings = invitations::table
+        .inner_join(users::table.on(users::id.eq(invitations::user_id)))
+        .filter(invitations::board_id.eq(board_id))
+        .filter(invitations::expire.gt(now))
+        .select((users::email,diesel::dsl::sql::<Integer>("-1")))
+        .load::<UserPermission>(&mut connection)
+        .map_err(|_| Error::UserNotFound)?;
+
+    pendings.append(&mut permissions);
+    let body = Json(json!(pendings));
     Ok(body)
 }
 

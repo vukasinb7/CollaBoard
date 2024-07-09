@@ -19,6 +19,7 @@ pub fn board_page(BoardPageProps { id }: &BoardPageProps) -> Html {
     extern "C" {
         #[wasm_bindgen(js_name = "render_excalidraw")]
         fn render_excalidraw(token:String,id:i32,data:String,role:String);
+
     }
 
     let (store, _) = use_store::<Store>();

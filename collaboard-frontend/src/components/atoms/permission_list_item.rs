@@ -40,17 +40,21 @@ pub fn permission_list_item(props: &Props) -> Html {
     };
 
     html! {
-        <div style="display:flex;flex-direction:row;align-items:center;justify-content:space-between;width:100%;margin-top:15px">
+        <div class="permission-list-item">
             <p>{permission.clone().email}</p>
             <div style="display:flex;flex-direction:row;justify-content:center;margin-left:35px; align-items:center;">
                 <p style="margin-right:10px">
                     {match permission.clone().permission_type{
                             1=>"Editor",
                             2=>"Owner",
-                            _ => "Viewer",}}</p>
-                <button class="icon-button" onclick={delete_permission_callback} >
+                            0 => "Viewer",
+                            _ => "Pending"}}</p>
+                if permission.permission_type!=-1 {<button class="icon-button" onclick={delete_permission_callback} >
                     <img src="static/close.png" style="width:20px;"  alt="close"/>
-                </button>
+                </button>}
+                if permission.permission_type==-1{
+                    <div style="width:20px;"/>
+        }
             </div>
         </div>
   }

@@ -13,7 +13,6 @@ pub fn not_found_page() -> Html {
     let token = store.token.clone();
     let history = use_navigator().unwrap();
 
-
     let cloned_history = history.clone();
     let cloned_token = token.clone();
     use_effect_with(token, move |_| {
