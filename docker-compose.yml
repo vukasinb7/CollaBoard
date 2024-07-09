@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres
+    container_name: postgres
+    restart: always
+    environment:
+      POSTGRES_DB: collaboard_db
+      POSTGRES_MAX_CONNECTIONS: 1000
+      POSTGRES_USER: collaboard
+      POSTGRES_PASSWORD: collaboard
+    ports:
+      - "6543:5432"
+    working_dir: /var/lib/postgresql/data
+    volumes:
+      - Postgres:/var/lib/postgresql/data
+    tty: true
+volumes:
+  Postgres:
