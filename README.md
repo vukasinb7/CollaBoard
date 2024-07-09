@@ -1,6 +1,18 @@
 # CollaBoard
-## Napomena za projektni zadatak
-Projekat se radi za ocenu 10. Ovaj projekat je namenjen za diplomski rad i odobren je od strane profesora Dejanovića. Plan za ovaj projekat je implementirati podskup problema definisanog u narednim poglavljima. Plan je implementiranje funkcionalnosti 2., 3.,4., 7.
+### Backend
+- Axum HTTP Server
+- Axum WS Server
+- Diesel ORM & Query Builder
+- Lettre Email Client
+
+### Frontend
+- Yew Framework
+- WASM Bindgen to bind [Excalidraw](https://docs.excalidraw.com/)'s JS API to Rust functions
+
+## Demo
+
+https://github.com/vukasinb7/CollaBoard/assets/51921035/dc414dd7-98a6-4a12-8809-2d0bbb393b42
+
 
 ## Opis problema
 Potrebno je implementirati aplikaciju koja omogućava kolaborativno pisanje/crtanje po tabli. Korisnicima je potrebno omogućiti lak pristup tabli za crtanje sa mnoštvom alata i mogućnosti, kao i lako i jednostavno deljenje i čuvanje njihovih radova. Projekat ima za cilj razvijanje visoko performantne kolaborativne table koja omogućava interakciju više korisnika na tabli u realnom vremenu. Backend sistema će biti implementiran koristeći programski jezik Rust kako bi se osigurala low latency osobina koja je kljucna za ovakav tip aplikacije, uz dodatno korišćenje  WebAssembly tehnologije, Yew framework. Za vizualizaciju tabele koristiće se  WASM-Bindgen kao veza sa nekom od popularnih JS biblioteka za Canvas (konkretna JS biblioteka će biti odabrana tokom implementacije). Više korisnika će se realizovati pomoću WS servera koji radi na principu room sistema i on će voditi računa o korisnicima unutar sobe.
